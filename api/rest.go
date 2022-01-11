@@ -170,14 +170,14 @@ func (a *App) statusJson(w http.ResponseWriter, r *http.Request) {
 	respondWithJSON(w, http.StatusOK, s)
 }
 
-func (a *App) convertExec(w http.ResponseWriter, r *http.Request) {
+func (a *App) trimExec(w http.ResponseWriter, r *http.Request) {
 	var s Status
 
-	id := r.FormValue("id")
-	key := r.FormValue("key")
-	value := r.FormValue("value")
+	uid := r.FormValue("uid")
+	sstart := r.FormValue("sstart")
+	send := r.FormValue("send")
 
-	err := s.GetExec(id, key, value)
+	err := s.trimExec(uid, sstart, send)
 
 	if err != nil {
 		s.Status = "error"

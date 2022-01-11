@@ -5,11 +5,15 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"github.com/Bnei-Baruch/wf-trim/common"
 	"github.com/gabriel-vasile/mimetype"
 	"gopkg.in/vansante/go-ffprobe.v2"
 	"io"
+	"net/http"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -25,9 +29,9 @@ type Upload struct {
 }
 
 type Status struct {
-	Status string                 `json:"status"`
-	Out    string                 `json:"stdout"`
-	Result map[string]interface{} `json:"jsonst"`
+	Status string      `json:"status"`
+	Out    string      `json:"stdout"`
+	Result interface{} `json:"jsonst"`
 }
 
 func (s *Status) PutExec(endpoint string, p string) error {
@@ -47,13 +51,23 @@ func (s *Status) PutExec(endpoint string, p string) error {
 	return nil
 }
 
-func (s *Status) GetExec(id string, key string, value string) error {
+func (s *Status) trimExec(uid string, sstart string, send string) error {
 
-	cmdArguments := []string{id, key, value}
-	cmd := exec.Command("/opt/convert/exec.sh", cmdArguments...)
-	cmd.Dir = "/opt/convert"
+	fn, err := getFile(uid)
+	if err != nil {
+		s.Out = err.Error()
+		return err
+	}
+
+	inp := hmsParse(sstart)
+	oup := hmsParse(send) - inp
+	ss := strconv.Itoa(inp)
+	tt := strconv.Itoa(oup)
+
+	cmdArguments := []string{fn, ss, tt}
+	cmd := exec.Command(common.WORK_DIR+"/exec.sh", cmdArguments...)
+	cmd.Dir = common.WORK_DIR
 	out, err := cmd.CombinedOutput()
-
 	if err != nil {
 		s.Out = err.Error()
 		return err
@@ -63,6 +77,51 @@ func (s *Status) GetExec(id string, key string, value string) error {
 	json.Unmarshal(out, &s.Result)
 
 	return nil
+}
+
+func hmsParse(hms string) int {
+	hms = strings.Replace(hms, "h", ":", -1)
+	hms = strings.Replace(hms, "m", ":", -1)
+	hms = strings.Replace(hms, "s", "", -1)
+	t := strings.Split(hms, ":")
+	var h, m, s int
+
+	switch l := len(t); l {
+	case 3:
+		_, _ = fmt.Sscanf(hms, "%d:%d:%d", &h, &m, &s)
+	case 2:
+		_, _ = fmt.Sscanf(hms, "%d:%d", &m, &s)
+	case 1:
+		_, _ = fmt.Sscanf(hms, "%d", &s)
+	}
+
+	return h*3600 + m*60 + s
+}
+
+func getFile(uid string) (filename string, err error) {
+
+	resp, err := http.Get(common.CDN_URL + "/" + uid)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	location := resp.Request.URL.String()
+	parts := strings.Split(location, "/")
+	filename = parts[len(parts)-1]
+
+	out, err := os.Create(common.WORK_DIR + "/" + filename)
+	if err != nil {
+		return "", err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return filename, nil
 }
 
 func (s *Status) GetStatus(endpoint string, id string, key string, value string) error {

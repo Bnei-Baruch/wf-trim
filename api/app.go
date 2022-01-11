@@ -51,10 +51,10 @@ func (a *App) Run(port string) {
 
 func (a *App) InitializeRoutes() {
 	a.Router.Use(a.LoggingMiddleware)
-	a.Router.HandleFunc("/convert", a.convertExec).Methods("GET")
-	a.Router.HandleFunc("/{ep}/upload", a.handleUpload).Methods("POST")
-	a.Router.HandleFunc("/workflow/{ep}", a.putJson).Methods("PUT")
-	a.Router.HandleFunc("/{ep}/status", a.statusJson).Methods("GET")
+	a.Router.HandleFunc("/trim", a.trimExec).Methods("GET")
+	//a.Router.HandleFunc("/{ep}/upload", a.handleUpload).Methods("POST")
+	//a.Router.HandleFunc("/workflow/{ep}", a.putJson).Methods("PUT")
+	//a.Router.HandleFunc("/{ep}/status", a.statusJson).Methods("GET")
 	a.Router.PathPrefix("/data/").Handler(http.StripPrefix("/data/", http.FileServer(http.Dir("/data"))))
 }
 
