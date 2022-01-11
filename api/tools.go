@@ -64,7 +64,7 @@ func (s *Status) trimExec(uid string, sstart string, send string) error {
 	ss := strconv.Itoa(inp)
 	tt := strconv.Itoa(oup)
 
-	cmdArguments := []string{fn, ss, tt}
+	cmdArguments := []string{fn, ss, tt, sstart, send}
 	cmd := exec.Command(common.WORK_DIR+"/exec.sh", cmdArguments...)
 	cmd.Dir = common.WORK_DIR
 	out, err := cmd.CombinedOutput()
