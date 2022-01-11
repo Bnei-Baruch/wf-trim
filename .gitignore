@@ -1,0 +1,12 @@
+.idea/
+
+.env
+*.swp
+*.log
+notes.txt
+
+misc
+logs
+
+wf-trim
+test*
