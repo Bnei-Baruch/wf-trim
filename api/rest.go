@@ -187,3 +187,23 @@ func (a *App) trimExec(w http.ResponseWriter, r *http.Request) {
 
 	respondWithJSON(w, http.StatusOK, s)
 }
+
+func (a *App) getFilesList(w http.ResponseWriter, r *http.Request) {
+
+	vars := mux.Vars(r)
+	ep := vars["ep"]
+	var list []string
+
+	files, err := ioutil.ReadDir("/" + ep)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "Not found")
+	}
+
+	for _, f := range files {
+		if f.Size() > 1024*1024 {
+			list = append(list, f.Name())
+		}
+	}
+
+	respondWithJSON(w, http.StatusOK, list)
+}
