@@ -77,7 +77,7 @@ func (s *Status) trimExec(uid string, sstart string, send string) error {
 	s.Out = string(out)
 	n := strings.Split(fn, ".")[0]
 	e := strings.Split(fn, ".")[1]
-	s.Result = common.LINK_URL + n + "_" + ss + "-" + tt + "." + e
+	s.Result = common.LINK_URL + n + "_" + sstart + "-" + send + "." + e
 
 	return nil
 }
