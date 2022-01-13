@@ -30,9 +30,9 @@ type Upload struct {
 }
 
 type Status struct {
-	Status string      `json:"status"`
-	Out    string      `json:"stdout"`
-	Result interface{} `json:"jsonst"`
+	Status string `json:"status"`
+	Out    string `json:"stdout"`
+	Result string `json:"link"`
 }
 
 func (s *Status) PutExec(endpoint string, p string) error {
@@ -75,7 +75,9 @@ func (s *Status) trimExec(uid string, sstart string, send string) error {
 	}
 
 	s.Out = string(out)
-	json.Unmarshal(out, &s.Result)
+	n := strings.Split(fn, ".")[0]
+	e := strings.Split(fn, ".")[1]
+	s.Result = common.LINK_URL + n + "_" + ss + "-" + tt + "." + e
 
 	return nil
 }
