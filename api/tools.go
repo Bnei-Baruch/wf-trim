@@ -67,7 +67,10 @@ func (s *Status) trimExec(uid string, sstart string, send string) error {
 
 	n := strings.Split(fn, ".")[0]
 	e := strings.Split(fn, ".")[1]
-	// Generate out link file name
+	h := strings.Split(n, "_")
+	hd := h[len(h)-1]
+
+	ifn := getInputFileName(fn, uid)
 	ofn := n + "_" + sstart + "-" + send + "." + e
 	s.Result = common.LINK_URL + ofn
 
@@ -76,16 +79,30 @@ func (s *Status) trimExec(uid string, sstart string, send string) error {
 		return nil
 	}
 
-	cmdArguments := []string{fn, ss, tt, sstart, send, uid}
-	cmd := exec.Command(common.WORK_DIR+"/exec.sh", cmdArguments...)
-	cmd.Dir = common.WORK_DIR
-	out, err := cmd.CombinedOutput()
+	var codec, args []string
+
+	if hd == "hd" {
+		codec = strings.Split("-c:v libx264 -profile:v high -preset veryfast -b:v 1000k -c:a aac", " ")
+	} else if e == "mp3" {
+		codec = strings.Split("-c:a mp3 -ar 44100 -write_xing 0", " ")
+	} else {
+		codec = strings.Split("-c:v libx264 -profile:v main -preset veryfast -b:v 450k -c:a aac", " ")
+	}
+
+	input := []string{"-y", "-ss", ss, "-i", common.SRC_DIR + "/" + ifn, "-to", tt}
+	output := []string{"-f", e, common.DATA_DIR + "/" + ofn}
+
+	args = append(input, codec...)
+	args = append(args, output...)
+
+	out, err := exec.Command("ffmpeg", args...).CombinedOutput()
+
 	if err != nil {
-		s.Out = err.Error()
+		s.Out = string(out)
 		return err
 	}
 
-	s.Out = string(out)
+	s.Out = uid
 
 	return nil
 }
@@ -120,6 +137,29 @@ func getFile(uid string) (filename string, err error) {
 	location := resp.Request.URL.String()
 	parts := strings.Split(location, "/")
 	filename = parts[len(parts)-1]
+
+	ifn := getInputFileName(filename, uid)
+
+	// Do not download twice same file
+	if isExists(common.SRC_DIR + "/" + ifn) {
+		return filename, nil
+	}
+
+	out, err := os.Create(common.SRC_DIR + "/" + ifn)
+	if err != nil {
+		return "", err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	return filename, nil
+}
+
+func getInputFileName(filename string, uid string) string {
 	name := ""
 
 	n := strings.Split(filename, ".")[0]
@@ -133,23 +173,7 @@ func getFile(uid string) (filename string, err error) {
 		name = uid + "." + e
 	}
 
-	// Do not download twice same file
-	if isExists(common.WORK_DIR + "/" + name) {
-		return filename, nil
-	}
-
-	out, err := os.Create(common.WORK_DIR + "/" + name)
-	if err != nil {
-		return "", err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	return filename, nil
+	return name
 }
 
 func isExists(path string) bool {
