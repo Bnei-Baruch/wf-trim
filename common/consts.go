@@ -10,4 +10,5 @@ var (
 	SKIP_AUTH = os.Getenv("SKIP_AUTH") == "true"
 	LOG_PATH  = os.Getenv("LOG_PATH")
 	WORK_DIR  = os.Getenv("WORK_DIR")
+	DATA_DIR  = os.Getenv("DATA_DIR")
 )

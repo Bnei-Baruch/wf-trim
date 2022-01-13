@@ -65,6 +65,17 @@ func (s *Status) trimExec(uid string, sstart string, send string) error {
 	ss := strconv.Itoa(inp)
 	tt := strconv.Itoa(oup)
 
+	n := strings.Split(fn, ".")[0]
+	e := strings.Split(fn, ".")[1]
+	// Generate out link file name
+	ofn := n + "_" + sstart + "-" + send + "." + e
+	s.Result = common.LINK_URL + ofn
+
+	// Maybe someone already did trim with exact data
+	if isExists(common.DATA_DIR + "/" + ofn) {
+		return nil
+	}
+
 	cmdArguments := []string{fn, ss, tt, sstart, send, uid}
 	cmd := exec.Command(common.WORK_DIR+"/exec.sh", cmdArguments...)
 	cmd.Dir = common.WORK_DIR
@@ -75,9 +86,6 @@ func (s *Status) trimExec(uid string, sstart string, send string) error {
 	}
 
 	s.Out = string(out)
-	n := strings.Split(fn, ".")[0]
-	e := strings.Split(fn, ".")[1]
-	s.Result = common.LINK_URL + n + "_" + sstart + "-" + send + "." + e
 
 	return nil
 }
