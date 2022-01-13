@@ -5,6 +5,7 @@ import (
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/Bnei-Baruch/wf-trim/common"
 	"github.com/gabriel-vasile/mimetype"
@@ -109,8 +110,25 @@ func getFile(uid string) (filename string, err error) {
 	location := resp.Request.URL.String()
 	parts := strings.Split(location, "/")
 	filename = parts[len(parts)-1]
+	name := ""
 
-	out, err := os.Create(common.WORK_DIR + "/" + filename)
+	n := strings.Split(filename, ".")[0]
+	e := strings.Split(filename, ".")[1]
+	s := strings.Split(n, "_")
+	hd := s[len(s)-1]
+
+	if hd == "hd" {
+		name = uid + "_hd.mp4"
+	} else {
+		name = uid + "." + e
+	}
+
+	// Do not download twice same file
+	if isExists(common.WORK_DIR + "/" + name) {
+		return filename, nil
+	}
+
+	out, err := os.Create(common.WORK_DIR + "/" + name)
 	if err != nil {
 		return "", err
 	}
@@ -122,6 +140,11 @@ func getFile(uid string) (filename string, err error) {
 	}
 
 	return filename, nil
+}
+
+func isExists(path string) bool {
+	_, err := os.Stat(path)
+	return !errors.Is(err, os.ErrNotExist)
 }
 
 func (s *Status) GetStatus(endpoint string, id string, key string, value string) error {
