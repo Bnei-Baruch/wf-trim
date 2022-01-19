@@ -1,12 +1,15 @@
 package api
 
 import (
+	"bytes"
 	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 )
 
 func getUploadPath(ep string) string {
@@ -129,6 +132,27 @@ func (a *App) handleUpload(w http.ResponseWriter, r *http.Request) {
 		os.Rename(tempfile.Name(), u.Url)
 		u.UploadProps(u.Url, endpoint)
 	}
+}
+
+func (a *App) handleDownload(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	file := vars["file"]
+	dlBytes, err := ioutil.ReadFile(file)
+
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	mime := http.DetectContentType(dlBytes)
+	fileSize := len(string(dlBytes))
+	w.Header().Set("Content-Type", mime)
+	w.Header().Set("Content-Disposition", "attachment; filename="+file+"")
+	w.Header().Set("Expires", "0")
+	w.Header().Set("Content-Transfer-Encoding", "binary")
+	w.Header().Set("Content-Length", strconv.Itoa(fileSize))
+	w.Header().Set("Content-Control", "private, no-transform, no-store, must-revalidate")
+	http.ServeContent(w, r, file, time.Now(), bytes.NewReader(dlBytes))
 }
 
 func (a *App) putJson(w http.ResponseWriter, r *http.Request) {

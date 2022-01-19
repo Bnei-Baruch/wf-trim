@@ -33,6 +33,7 @@ type Status struct {
 	Status string `json:"status"`
 	Out    string `json:"stdout"`
 	Result string `json:"link"`
+	Get    string `json:"download"`
 }
 
 func (s *Status) PutExec(endpoint string, p string) error {
@@ -73,6 +74,7 @@ func (s *Status) trimExec(uid string, sstart string, send string) error {
 	ifn := getInputFileName(fn, uid)
 	ofn := n + "_" + sstart + "-" + send + "." + e
 	s.Result = common.LINK_URL + ofn
+	s.Get = common.GET_URL + ofn
 
 	// Maybe someone already did trim with exact data
 	if isExists(common.DATA_DIR + "/" + ofn) {
