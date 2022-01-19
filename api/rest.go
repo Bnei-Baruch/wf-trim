@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"github.com/Bnei-Baruch/wf-trim/common"
 	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
@@ -137,7 +138,7 @@ func (a *App) handleUpload(w http.ResponseWriter, r *http.Request) {
 func (a *App) handleDownload(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
 	file := vars["file"]
-	dlBytes, err := ioutil.ReadFile(file)
+	dlBytes, err := ioutil.ReadFile(common.DATA_DIR + "/" + file)
 
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
