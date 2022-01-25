@@ -139,21 +139,36 @@ func getFile(uid string) (filename string, err error) {
 	location := resp.Request.URL.String()
 	parts := strings.Split(location, "/")
 	filename = parts[len(parts)-1]
-
 	ifn := getInputFileName(filename, uid)
+	tmpFile := common.SRC_DIR + "/" + ifn + ".part"
+	finalFile := common.SRC_DIR + "/" + ifn
+
+	// Wait for finish if someone downloads wright now
+	for {
+		if !isExists(tmpFile) {
+			break
+		}
+		println("Waiting")
+		time.Sleep(2 * time.Second)
+	}
 
 	// Do not download twice same file
-	if isExists(common.SRC_DIR + "/" + ifn) {
+	if isExists(finalFile) {
 		return filename, nil
 	}
 
-	out, err := os.Create(common.SRC_DIR + "/" + ifn)
+	out, err := os.Create(tmpFile)
 	if err != nil {
 		return "", err
 	}
 	defer out.Close()
 
 	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	err = os.Rename(tmpFile, finalFile)
 	if err != nil {
 		return "", err
 	}
