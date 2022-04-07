@@ -81,18 +81,20 @@ func (s *Status) trimExec(uid string, sstart string, send string) error {
 		return nil
 	}
 
-	var codec, args []string
+	var codec, args, input []string
+	input = []string{"-y", "-ss", ss, "-i", common.SRC_DIR + "/" + ifn, "-to", tt}
+	output := []string{"-f", e, common.DATA_DIR + "/" + ofn}
+	decoder := strings.Split("-hwaccel qsv -c:v h264_qsv", " ")
 
 	if hd == "hd" {
-		codec = strings.Split("-c:v libx264 -profile:v high -preset veryfast -b:v 1000k -c:a aac", " ")
+		codec = strings.Split("-c:v h264_qsv -profile:v high -preset veryfast -b:v 1000k -c:a aac", " ")
+		input = append(decoder, input...)
 	} else if e == "mp3" {
 		codec = strings.Split("-c:a mp3 -ar 44100 -write_xing 0", " ")
 	} else {
-		codec = strings.Split("-c:v libx264 -profile:v main -preset veryfast -b:v 450k -c:a aac", " ")
+		codec = strings.Split("-c:v h264_qsv -profile:v main -preset veryfast -b:v 450k -c:a aac", " ")
+		input = append(decoder, input...)
 	}
-
-	input := []string{"-y", "-ss", ss, "-i", common.SRC_DIR + "/" + ifn, "-to", tt}
-	output := []string{"-f", e, common.DATA_DIR + "/" + ofn}
 
 	args = append(input, codec...)
 	args = append(args, output...)
