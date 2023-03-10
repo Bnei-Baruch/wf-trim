@@ -84,7 +84,7 @@ func (s *Status) trimExec(uid string, sstart string, send string) error {
 	var codec, args, input []string
 	input = []string{"-y", "-ss", ss, "-i", common.SRC_DIR + "/" + ifn, "-to", tt}
 	output := []string{"-f", e, common.DATA_DIR + "/" + ofn}
-	decoder := strings.Split("-hwaccel qsv -c:v h264_qsv", " ")
+	decoder := strings.Split("-init_hw_device qsv=hw -filter_hw_device hw -hwaccel qsv -hwaccel_output_format qsv", " ")
 
 	if hd == "hd" {
 		codec = strings.Split("-c:v h264_qsv -profile:v high -preset veryfast -b:v 1000k -c:a aac", " ")
