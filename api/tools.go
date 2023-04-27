@@ -207,8 +207,8 @@ func getNewFile(uid string, audio string, video string) (filename string, err er
 	parts := strings.Split(location, "/")
 	filename = parts[len(parts)-1]
 	ifn := getInputFileName(filename, uid)
-	tmpFile := common.SRC_DIR + "/" + ifn + ".part"
-	finalFile := common.SRC_DIR + "/" + ifn
+	tmpFile := common.SRC_DIR + "/" + audio + "_" + ifn + ".part"
+	finalFile := common.SRC_DIR + "/" + audio + "_" + ifn
 
 	// Wait for finish if someone downloads wright now
 	for {
