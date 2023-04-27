@@ -201,8 +201,17 @@ func (a *App) trimExec(w http.ResponseWriter, r *http.Request) {
 	uid := r.FormValue("uid")
 	sstart := r.FormValue("sstart")
 	send := r.FormValue("send")
+	audio := r.FormValue("audio")
+	video := r.FormValue("video")
+	var err error
 
-	err := s.trimExec(uid, sstart, send)
+	if audio != "" {
+		//HLS Trim
+		err = s.newTrimExec(uid, audio, video, sstart, send)
+	} else {
+		//Files Trim
+		err = s.oldTrimExec(uid, sstart, send)
+	}
 
 	if err != nil {
 		s.Status = "error"

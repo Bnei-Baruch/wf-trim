@@ -53,7 +53,65 @@ func (s *Status) PutExec(endpoint string, p string) error {
 	return nil
 }
 
-func (s *Status) trimExec(uid string, sstart string, send string) error {
+func (s *Status) newTrimExec(uid string, audio string, video string, sstart string, send string) error {
+
+	fn, err := getNewFile(uid, audio, video)
+	if err != nil {
+		s.Out = err.Error()
+		return err
+	}
+
+	inp := hmsParse(sstart)
+	oup := hmsParse(send) - inp
+	ss := strconv.Itoa(inp)
+	tt := strconv.Itoa(oup)
+
+	n := strings.Split(fn, ".")[0]
+	e := strings.Split(fn, ".")[1]
+	h := strings.Split(n, "_")
+	q := h[len(h)-1]
+
+	ifn := getInputFileName(fn, uid)
+	ofn := n + "_" + sstart + "-" + send + "." + e
+	s.Result = common.LINK_URL + ofn
+	s.Get = common.GET_URL + ofn
+
+	// Maybe someone already did trim with exact data
+	if isExists(common.DATA_DIR + "/" + ofn) {
+		return nil
+	}
+
+	var codec, args, input []string
+	input = []string{"-y", "-ss", ss, "-i", common.SRC_DIR + "/" + ifn, "-to", tt}
+	output := []string{"-f", e, common.DATA_DIR + "/" + ofn}
+	decoder := strings.Split("-init_hw_device qsv=hw -filter_hw_device hw -hwaccel qsv -hwaccel_output_format qsv", " ")
+
+	if q == "hd" {
+		codec = strings.Split("-c:v h264_qsv -profile:v high -preset veryfast -b:v 1000k -c:a aac", " ")
+		input = append(decoder, input...)
+	} else if e == "m4a" {
+		codec = strings.Split("-c:a aac -b:a 64k", " ")
+	} else {
+		codec = strings.Split("-c:v h264_qsv -profile:v main -preset veryfast -b:v 450k -c:a aac", " ")
+		input = append(decoder, input...)
+	}
+
+	args = append(input, codec...)
+	args = append(args, output...)
+
+	out, err := exec.Command("ffmpeg", args...).CombinedOutput()
+
+	if err != nil {
+		s.Out = string(out)
+		return err
+	}
+
+	s.Out = uid
+
+	return nil
+}
+
+func (s *Status) oldTrimExec(uid string, sstart string, send string) error {
 
 	fn, err := getFile(uid)
 	if err != nil {
@@ -130,6 +188,54 @@ func hmsParse(hms string) int {
 	return h*3600 + m*60 + s
 }
 
+func getNewFile(uid string, audio string, video string) (filename string, err error) {
+
+	resp, err := http.Get(common.HLS_URL + "/" + uid + ".mp4?audio=" + audio + "&video=" + video)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	location := resp.Request.URL.String()
+	parts := strings.Split(location, "/")
+	filename = parts[len(parts)-1]
+	ifn := getInputFileName(filename, uid)
+	tmpFile := common.SRC_DIR + "/" + ifn + ".part"
+	finalFile := common.SRC_DIR + "/" + ifn
+
+	// Wait for finish if someone downloads wright now
+	for {
+		if !isExists(tmpFile) {
+			break
+		}
+		println("Waiting")
+		time.Sleep(2 * time.Second)
+	}
+
+	// Do not download twice same file
+	if isExists(finalFile) {
+		return filename, nil
+	}
+
+	out, err := os.Create(tmpFile)
+	if err != nil {
+		return "", err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	err = os.Rename(tmpFile, finalFile)
+	if err != nil {
+		return "", err
+	}
+
+	return filename, nil
+}
+
 func getFile(uid string) (filename string, err error) {
 
 	resp, err := http.Get(common.CDN_URL + "/" + uid)
@@ -184,11 +290,16 @@ func getInputFileName(filename string, uid string) string {
 	n := strings.Split(filename, ".")[0]
 	e := strings.Split(filename, ".")[1]
 	s := strings.Split(n, "_")
-	hd := s[len(s)-1]
+	video := s[len(s)-1]
 
-	if hd == "hd" {
+	switch video {
+	case "hd":
 		name = uid + "_hd.mp4"
-	} else {
+	case "nhd":
+		name = uid + "_nhd.mp4"
+	case "fhd":
+		name = uid + "_fhd.mp4"
+	default:
 		name = uid + "." + e
 	}
 
