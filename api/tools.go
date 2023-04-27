@@ -83,17 +83,24 @@ func (s *Status) newTrimExec(uid string, audio string, video string, sstart stri
 
 	var codec, args, input []string
 	input = []string{"-y", "-ss", ss, "-i", common.SRC_DIR + "/" + ifn, "-to", tt}
-	output := []string{"-f", e, common.DATA_DIR + "/" + ofn}
+	output := []string{"-f", "mp4", common.DATA_DIR + "/" + ofn}
 	decoder := strings.Split("-init_hw_device qsv=hw -filter_hw_device hw -hwaccel qsv -hwaccel_output_format qsv", " ")
 
 	if q == "hd" {
 		codec = strings.Split("-c:v h264_qsv -profile:v high -preset veryfast -b:v 1000k -c:a aac", " ")
 		input = append(decoder, input...)
+	} else if q == "nhd" {
+		codec = strings.Split("-c:v h264_qsv -profile:v main -preset veryfast -b:v 450k -c:a aac", " ")
+		input = append(decoder, input...)
+	} else if q == "fhd" {
+		codec = strings.Split("-c:v h264_qsv -profile:v main -preset veryfast -b:v 2500k -c:a aac", " ")
+		input = append(decoder, input...)
 	} else if e == "m4a" {
 		codec = strings.Split("-c:a aac -b:a 64k", " ")
 	} else {
-		codec = strings.Split("-c:v h264_qsv -profile:v main -preset veryfast -b:v 450k -c:a aac", " ")
-		input = append(decoder, input...)
+		err = errors.New("wrong options for demux")
+		s.Out = "Wrong options for demux"
+		return err
 	}
 
 	args = append(input, codec...)
@@ -190,7 +197,7 @@ func hmsParse(hms string) int {
 
 func getNewFile(uid string, audio string, video string) (filename string, err error) {
 
-	resp, err := http.Get(common.HLS_URL + "/" + uid + ".mp4?audio=" + audio + "&video=" + video)
+	resp, err := http.Get(common.HLS_URL + "/get/" + uid + ".mp4?audio=" + audio + "&video=" + video)
 	if err != nil {
 		return "", err
 	}
