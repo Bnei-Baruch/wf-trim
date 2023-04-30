@@ -71,7 +71,7 @@ func (s *Status) newTrimExec(uid string, audio string, video string, sstart stri
 	h := strings.Split(n, "_")
 	q := h[len(h)-1]
 
-	ifn := getInputFileName(fn, uid)
+	ifn := getInputHLSFileName(fn, uid, audio)
 	ofn := n + "_" + sstart + "-" + send + "." + e
 	s.Result = common.LINK_URL + ofn
 	s.Get = common.GET_URL + ofn
@@ -289,6 +289,28 @@ func getFile(uid string) (filename string, err error) {
 	}
 
 	return filename, nil
+}
+
+func getInputHLSFileName(filename string, uid string, lang string) string {
+	name := ""
+
+	n := strings.Split(filename, ".")[0]
+	e := strings.Split(filename, ".")[1]
+	s := strings.Split(n, "_")
+	video := s[len(s)-1]
+
+	switch video {
+	case "hd":
+		name = lang + "_" + uid + "_hd.mp4"
+	case "nhd":
+		name = lang + "_" + uid + "_nhd.mp4"
+	case "fhd":
+		name = lang + "_" + uid + "_fhd.mp4"
+	default:
+		name = lang + "_" + uid + "." + e
+	}
+
+	return name
 }
 
 func getInputFileName(filename string, uid string) string {
