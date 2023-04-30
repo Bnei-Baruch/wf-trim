@@ -240,7 +240,7 @@ func getNewFile(uid string, audio string, video string) (filename string, err er
 		return "", err
 	}
 
-	return filename, nil
+	return audio + "_" + ifn, nil
 }
 
 func getFile(uid string) (filename string, err error) {
