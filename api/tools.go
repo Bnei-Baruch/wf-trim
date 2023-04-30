@@ -68,8 +68,6 @@ func (s *Status) newTrimExec(uid string, audio string, video string, sstart stri
 
 	n := strings.Split(fn, ".")[0]
 	e := strings.Split(fn, ".")[1]
-	h := strings.Split(n, "_")
-	q := h[len(h)-1]
 
 	ifn := getInputFileName(fn, uid)
 	ofn := n + "_" + sstart + "-" + send + "." + e
@@ -86,13 +84,13 @@ func (s *Status) newTrimExec(uid string, audio string, video string, sstart stri
 	output := []string{"-f", "mp4", common.DATA_DIR + "/" + ofn}
 	decoder := strings.Split("-init_hw_device qsv=hw -filter_hw_device hw -hwaccel qsv -hwaccel_output_format qsv", " ")
 
-	if q == "hd" {
+	if video == "hd" {
 		codec = strings.Split("-c:v h264_qsv -profile:v high -preset veryfast -b:v 1000k -c:a aac", " ")
 		input = append(decoder, input...)
-	} else if q == "nhd" {
+	} else if video == "nhd" {
 		codec = strings.Split("-c:v h264_qsv -profile:v main -preset veryfast -b:v 450k -c:a aac", " ")
 		input = append(decoder, input...)
-	} else if q == "fhd" {
+	} else if video == "fhd" {
 		codec = strings.Split("-c:v h264_qsv -profile:v main -preset veryfast -b:v 2500k -c:a aac", " ")
 		input = append(decoder, input...)
 	} else if e == "m4a" {
