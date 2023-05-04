@@ -118,6 +118,76 @@ func (s *Status) newTrimExec(uid string, audio string, video string, sstart stri
 	return nil
 }
 
+func getNewFile(uid string, audio string, video string) (filename string, err error) {
+
+	resp, err := http.Get(common.HLS_URL + "/get/" + uid + ".mp4?audio=" + audio + "&video=" + video)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	location := resp.Request.URL.String()
+	parts := strings.Split(location, "/")
+	filename = parts[len(parts)-1]
+	ifn := getInputHLSFileName(filename, uid, audio)
+	tmpFile := common.SRC_DIR + "/" + audio + "_" + ifn + ".part"
+	finalFile := common.SRC_DIR + "/" + audio + "_" + ifn
+
+	// Wait for finish if someone downloads wright now
+	for {
+		if !isExists(tmpFile) {
+			break
+		}
+		println("Waiting")
+		time.Sleep(2 * time.Second)
+	}
+
+	// Do not download twice same file
+	if isExists(finalFile) {
+		return filename, nil
+	}
+
+	out, err := os.Create(tmpFile)
+	if err != nil {
+		return "", err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		return "", err
+	}
+
+	err = os.Rename(tmpFile, finalFile)
+	if err != nil {
+		return "", err
+	}
+
+	return audio + "_" + ifn, nil
+}
+
+func getInputHLSFileName(filename string, uid string, lang string) string {
+	name := ""
+
+	n := strings.Split(filename, ".")[0]
+	e := strings.Split(filename, ".")[1]
+	s := strings.Split(n, "_")
+	video := s[len(s)-1]
+
+	switch video {
+	case "hd":
+		name = lang + "_" + uid + "_hd.mp4"
+	case "nhd":
+		name = lang + "_" + uid + "_nhd.mp4"
+	case "fhd":
+		name = lang + "_" + uid + "_fhd.mp4"
+	default:
+		name = lang + "_" + uid + "." + e
+	}
+
+	return name
+}
+
 func (s *Status) oldTrimExec(uid string, sstart string, send string) error {
 
 	fn, err := getFile(uid)
@@ -176,73 +246,6 @@ func (s *Status) oldTrimExec(uid string, sstart string, send string) error {
 	return nil
 }
 
-func hmsParse(hms string) int {
-	hms = strings.Replace(hms, "h", ":", -1)
-	hms = strings.Replace(hms, "m", ":", -1)
-	hms = strings.Replace(hms, "s", "", -1)
-	t := strings.Split(hms, ":")
-	var h, m, s int
-
-	switch l := len(t); l {
-	case 3:
-		_, _ = fmt.Sscanf(hms, "%d:%d:%d", &h, &m, &s)
-	case 2:
-		_, _ = fmt.Sscanf(hms, "%d:%d", &m, &s)
-	case 1:
-		_, _ = fmt.Sscanf(hms, "%d", &s)
-	}
-
-	return h*3600 + m*60 + s
-}
-
-func getNewFile(uid string, audio string, video string) (filename string, err error) {
-
-	resp, err := http.Get(common.HLS_URL + "/get/" + uid + ".mp4?audio=" + audio + "&video=" + video)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	location := resp.Request.URL.String()
-	parts := strings.Split(location, "/")
-	filename = parts[len(parts)-1]
-	ifn := getInputFileName(filename, uid)
-	tmpFile := common.SRC_DIR + "/" + audio + "_" + ifn + ".part"
-	finalFile := common.SRC_DIR + "/" + audio + "_" + ifn
-
-	// Wait for finish if someone downloads wright now
-	for {
-		if !isExists(tmpFile) {
-			break
-		}
-		println("Waiting")
-		time.Sleep(2 * time.Second)
-	}
-
-	// Do not download twice same file
-	if isExists(finalFile) {
-		return filename, nil
-	}
-
-	out, err := os.Create(tmpFile)
-	if err != nil {
-		return "", err
-	}
-	defer out.Close()
-
-	_, err = io.Copy(out, resp.Body)
-	if err != nil {
-		return "", err
-	}
-
-	err = os.Rename(tmpFile, finalFile)
-	if err != nil {
-		return "", err
-	}
-
-	return audio + "_" + ifn, nil
-}
-
 func getFile(uid string) (filename string, err error) {
 
 	resp, err := http.Get(common.CDN_URL + "/" + uid)
@@ -291,28 +294,6 @@ func getFile(uid string) (filename string, err error) {
 	return filename, nil
 }
 
-func getInputHLSFileName(filename string, uid string, lang string) string {
-	name := ""
-
-	n := strings.Split(filename, ".")[0]
-	e := strings.Split(filename, ".")[1]
-	s := strings.Split(n, "_")
-	video := s[len(s)-1]
-
-	switch video {
-	case "hd":
-		name = lang + "_" + uid + "_hd.mp4"
-	case "nhd":
-		name = lang + "_" + uid + "_nhd.mp4"
-	case "fhd":
-		name = lang + "_" + uid + "_fhd.mp4"
-	default:
-		name = lang + "_" + uid + "." + e
-	}
-
-	return name
-}
-
 func getInputFileName(filename string, uid string) string {
 	name := ""
 
@@ -333,11 +314,6 @@ func getInputFileName(filename string, uid string) string {
 	}
 
 	return name
-}
-
-func isExists(path string) bool {
-	_, err := os.Stat(path)
-	return !errors.Is(err, os.ErrNotExist)
 }
 
 func (s *Status) GetStatus(endpoint string, id string, key string, value string) error {
@@ -419,4 +395,28 @@ func (u *Upload) UploadProps(filepath string, ep string) error {
 	}
 
 	return nil
+}
+
+func hmsParse(hms string) int {
+	hms = strings.Replace(hms, "h", ":", -1)
+	hms = strings.Replace(hms, "m", ":", -1)
+	hms = strings.Replace(hms, "s", "", -1)
+	t := strings.Split(hms, ":")
+	var h, m, s int
+
+	switch l := len(t); l {
+	case 3:
+		_, _ = fmt.Sscanf(hms, "%d:%d:%d", &h, &m, &s)
+	case 2:
+		_, _ = fmt.Sscanf(hms, "%d:%d", &m, &s)
+	case 1:
+		_, _ = fmt.Sscanf(hms, "%d", &s)
+	}
+
+	return h*3600 + m*60 + s
+}
+
+func isExists(path string) bool {
+	_, err := os.Stat(path)
+	return !errors.Is(err, os.ErrNotExist)
 }
