@@ -130,8 +130,8 @@ func getNewFile(uid string, audio string, video string) (filename string, err er
 	parts := strings.Split(location, "/")
 	filename = parts[len(parts)-1]
 	ifn := getInputHLSFileName(filename, uid, audio)
-	tmpFile := common.SRC_DIR + "/" + audio + "_" + ifn + ".part"
-	finalFile := common.SRC_DIR + "/" + audio + "_" + ifn
+	tmpFile := common.SRC_DIR + "/" + ifn + ".part"
+	finalFile := common.SRC_DIR + "/" + ifn
 
 	// Wait for finish if someone downloads wright now
 	for {
@@ -163,7 +163,7 @@ func getNewFile(uid string, audio string, video string) (filename string, err er
 		return "", err
 	}
 
-	return audio + "_" + ifn, nil
+	return filename, nil
 }
 
 func getInputHLSFileName(filename string, uid string, lang string) string {
