@@ -87,16 +87,16 @@ func (s *Status) newTrimExec(uid string, audio string, video string, sstart stri
 	decoder := strings.Split("-init_hw_device qsv=hw -filter_hw_device hw -hwaccel qsv -hwaccel_output_format qsv", " ")
 
 	if q == "hd" {
-		codec = strings.Split("-c:v h264_qsv -profile:v high -preset veryfast -b:v 1000k -c:a aac", " ")
+		codec = strings.Split("-c:v h264_qsv -profile:v high -preset veryfast -b:v 1000k -c:a copy", " ")
 		input = append(decoder, input...)
 	} else if q == "nhd" {
-		codec = strings.Split("-c:v h264_qsv -profile:v main -preset veryfast -b:v 450k -c:a aac", " ")
+		codec = strings.Split("-c:v h264_qsv -profile:v main -preset veryfast -b:v 450k -c:a copy", " ")
 		input = append(decoder, input...)
 	} else if q == "fhd" {
-		codec = strings.Split("-c:v h264_qsv -profile:v main -preset veryfast -b:v 2500k -c:a aac", " ")
+		codec = strings.Split("-c:v h264_qsv -profile:v main -preset veryfast -b:v 2500k -c:a copy", " ")
 		input = append(decoder, input...)
 	} else if e == "m4a" {
-		codec = strings.Split("-c:a aac -b:a 64k", " ")
+		codec = strings.Split("-c:a copy", " ")
 	} else {
 		err = errors.New("wrong options for demux")
 		s.Out = "Wrong options for demux"
